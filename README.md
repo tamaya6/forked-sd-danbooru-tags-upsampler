@@ -1,3 +1,11 @@
+# comfyui test
+comfyUIおためし移植  
+
+```
+pip install install optimum[onnxruntime]
+``` 
+
+
 # sd-danbooru-tags-upsampler
 
 日本語は[こちら](./README-ja.md)へ

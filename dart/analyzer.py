@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 from dataclasses import dataclass
 
-from modules.scripts import basedir
+# from modules.scripts import basedir
 
 logger = logging.getLogger(__name__)
 

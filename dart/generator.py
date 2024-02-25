@@ -48,6 +48,9 @@ class DartGenerator:
         if self.options["debug_logging"]:
             logger.setLevel(logging.DEBUG)
 
+        if self.options["debug_logging"]:
+            logger.setLevel(logging.DEBUG)
+
     def _load_dart_model(
         self,
     ):
@@ -63,9 +66,11 @@ class DartGenerator:
                 ),
             )
         logger.info(f"Dart model backend is {self.model_backend }")
+        logger.info(f"Dart model backend is {self.model_backend }")
 
         assert self.dart_model is not None
 
+        self.dart_model.to(self.model_device)  # type: ignore
         self.dart_model.to(self.model_device)  # type: ignore
 
     def _load_dart_tokenizer(self):
@@ -142,6 +147,9 @@ class DartGenerator:
     ) -> str:
         """Upsamples prompt"""
 
+    ) -> str:
+        """Upsamples prompt"""
+
         start_time = time.time()
 
         self.load_tokenizer_if_needed()
@@ -153,7 +161,11 @@ class DartGenerator:
         input_ids = self.dart_tokenizer.encode_plus(
             prompt, return_tensors="pt"
         ).input_ids
+        input_ids = self.dart_tokenizer.encode_plus(
+            prompt, return_tensors="pt"
+        ).input_ids
 
+        # output_ids is list[list[int]]
         # output_ids is list[list[int]]
         output_ids = self.dart_model.generate(
             input_ids,
@@ -171,7 +183,13 @@ class DartGenerator:
         decoded = self.dart_tokenizer.decode(
             output_ids[0][len(input_ids[0]) :],
             skip_special_tokens=True,
+        decoded = self.dart_tokenizer.decode(
+            output_ids[0][len(input_ids[0]) :],
+            skip_special_tokens=True,
         )
+        logger.debug(f"Generated tags: {decoded}")
+
+        escaped = ", ".join(escape_special_symbols(decoded.split(", ")))
         logger.debug(f"Generated tags: {decoded}")
 
         escaped = ", ".join(escape_special_symbols(decoded.split(", ")))
@@ -179,4 +197,5 @@ class DartGenerator:
         end_time = time.time()
         logger.info(f"Upsampling tags has taken {end_time-start_time:.2f} seconds")
 
+        return escaped
         return escaped

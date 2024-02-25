@@ -36,14 +36,19 @@ extension_dir = os.path.dirname(os.path.realpath(__file__))
 def get_random_seed():
     return random.randint(SEED_MIN, SEED_MAX)
 
+def _concatnate_texts(prefix: list[str], suffix: list[str]) -> list[str]:
+    return [
+        ", ".join([part for part in [prompt, suffix[i]] if part.strip() != ""])
+        for i, prompt in enumerate(prefix)
+    ]
+
 class DanbooruTagUpsampler:
     generator: DartGenerator
     analyzer: DartAnalyzer
 
     def __init__(self):        
 
-        opts = {}
-        self.options = parse_options({})
+        self.options = parse_options()
 
         self.generator = DartGenerator(
             self.options["model_name"],
@@ -78,8 +83,7 @@ class DanbooruTagUpsampler:
 
     def process(self, prompt, tag_length, ban_tags, seed):
 
-        # prompts = [ x.strip() for x in prompt.split(',') ]
-        prompts = [prompt]
+        prompts = [prompt.rstrip(',')]
         analyzing_results = [self.analyzer.analyze(p) for p in prompts]
 
         # print(f"""Your input contains:
@@ -100,25 +104,38 @@ class DanbooruTagUpsampler:
         ]
         bad_words_ids = self.generator.get_bad_words_ids(ban_tags)
 
-        # save the original seed
-        # original_seed = seed if seed != -1 else get_random_seed()
-        # seed = int(seed_num if seed_num != -1 else get_random_seed())
-
-        set_seed(seed)
-        print(upsample_prompts)
-        generated_texts = self.generator.generate(
-            upsample_prompts, bad_words_ids=bad_words_ids
-        )
+        # set_seed(seed)
+        # print(upsample_prompts)
+        # generated_texts = self.generator.generate(
+        #     upsample_prompts, bad_words_ids=bad_words_ids
+        # )
         # set_seed(original_seed)
 
-        all_prompts = prompts
+        upsampled_tags = self.upsample_tags(
+            upsample_prompts,
+            seeds=[seed],
+            bad_words_ids=bad_words_ids,
+        )
 
-        all_prompts = [
-            ", ".join(
-                [part for part in [prompt, generated_texts[i]] if part.strip() != ""]
-            )
-            for i, prompt in enumerate(all_prompts)
-        ]
+        all_prompts = prompts
+        all_prompts = _concatnate_texts(all_prompts, upsampled_tags)
 
         return all_prompts
+    
+    def upsample_tags(
+        self,
+        prompts: list[str],
+        seeds: list[int],
+        bad_words_ids: list[list[int]] | None = None,
+    ) -> list[str]:
+        if len(prompts) == 1 and len(prompts) != len(seeds):
+            prompts = prompts * len(seeds)
+
+        upsampled_tags = []
+        for prompt, seed in zip(prompts, seeds, strict=True):
+            set_seed(seed)
+            upsampled_tags.append(
+                self.generator.generate(prompt, bad_words_ids=bad_words_ids)
+            )
+        return upsampled_tags
 
